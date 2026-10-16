@@ -1,0 +1,15 @@
+# Gizli bilgiler
+.env
+.env.*
+*.key
+*.pem
+secrets/
+
+# Claude Code yerel ayarları (kişisel olabilir)
+.claude/settings.local.json
+
+# Windows ve editör çöpleri
+.DS_Store
+Thumbs.db
+desktop.ini
+node_modules/
