@@ -8,6 +8,8 @@ Karar: Kullanıcının zor bir anda durup düşünmesini ve doğru adımı seçm
 - Küçük adımlarla ilerle, her adımda kullanıcıdan onay al.
 - Ben istemeden `git push` yapma.
 - Bu klasörün dışındaki dosyalara dokunma.
+- Tasarım kararlarını (renk, yerleşim, figür, metin tonu) kendin verme. 2-3 seçenek sun ve kullanıcının seçmesini bekle.
+- Her iş sonunda hangi dosyaları değiştirdiğini özetle.
 
 ## Gizlilik ve güvenlik
 - Veri sadece kullanıcının tarayıcısında (localStorage) tutulur, hiçbir sunucuya gönderilmez.
