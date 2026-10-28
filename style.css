@@ -118,3 +118,183 @@ h2 {
 .alt p {
   margin: 0;
 }
+/* ---------- Aşama 2: Konu kutuları ---------- */
+.kutu-listesi {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.kutu {
+  width: 100%;
+  height: 100%;
+  min-height: 7.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1rem 0.75rem;
+  background: var(--kart);
+  color: var(--yazi);
+  border: 1px solid var(--kenarlik);
+  border-radius: var(--yaricap);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.kutu:hover {
+  border-color: var(--yardimci);
+}
+
+.kutu[aria-pressed="true"] {
+  border-color: var(--dur);
+  box-shadow: 0 0 0 1px var(--dur);
+}
+
+.kutu[aria-pressed="true"]::after {
+  content: "✓ Seçili";
+  margin-top: auto;
+  font-size: 0.8rem;
+  color: var(--dur);
+}
+
+.kutu-emoji {
+  font-size: 1.9rem;
+  line-height: 1.2;
+}
+
+.kutu-ad {
+  font-weight: 600;
+}
+
+.kutu-hedef {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--yardimci);
+}
+
+.secim-bilgi {
+  min-height: 1.6rem;
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--yardimci);
+  text-align: center;
+}
+
+/* ---------- Yeni kutu kartı ve form ---------- */
+.yeni-kutu {
+  border-style: dashed;
+  padding: 0.5rem;
+}
+
+.yeni-dugme {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: transparent;
+  color: var(--yazi);
+  border: none;
+  border-radius: 14px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.yeni-dugme:hover {
+  color: var(--dur);
+}
+
+.kutu-formu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 0.75rem 0.5rem;
+}
+
+.kutu-formu[hidden] {
+  display: none;
+}
+
+.kutu-formu label {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--yardimci);
+}
+
+.istege-bagli {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.kutu-formu input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  background: var(--zemin);
+  color: var(--yazi);
+  border: 1px solid var(--kenarlik);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 1rem;
+}
+
+.kutu-formu input::placeholder {
+  color: var(--yardimci);
+  opacity: 0.7;
+}
+
+.ipucu {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--yardimci);
+}
+
+.form-hata {
+  min-height: 1.3rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  color: var(--dur);
+}
+
+.form-dugmeler {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.dugme-ana,
+.dugme-ikincil {
+  padding: 0.75rem 1.1rem;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dugme-ana {
+  flex: 1;
+  background: var(--dur);
+  color: var(--zemin);
+  border: 1px solid var(--dur);
+}
+
+.dugme-ikincil {
+  background: transparent;
+  color: var(--yazi);
+  border: 1px solid var(--kenarlik);
+}
+
+/* ---------- Klavye ve hareket erişilebilirliği ---------- */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--bekle);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

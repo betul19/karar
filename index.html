@@ -18,10 +18,36 @@
 
     <section class="orta" aria-labelledby="kutular-baslik">
       <h2 id="kutular-baslik">Konu kutuların</h2>
-      <div class="kart bos-kart">
-        <p>Konu kutuların burada görünecek.</p>
-        <p class="yardimci">Yakında: bir konu seç, o anı yaz, adımını seç.</p>
+
+      <ul class="kutu-listesi" id="kutu-listesi"></ul>
+      <p class="secim-bilgi" id="secim-bilgi" aria-live="polite"></p>
+
+      <div class="kart yeni-kutu">
+        <button type="button" class="yeni-dugme" id="yeni-ac" aria-expanded="false" aria-controls="kutu-formu">
+          <span aria-hidden="true">＋</span> Kendi kutunu aç
+        </button>
+
+        <form id="kutu-formu" class="kutu-formu" hidden novalidate>
+          <label for="kutu-ad">Kutunun adı</label>
+          <input id="kutu-ad" type="text" maxlength="24" placeholder="örn. Gece telefonu" autocomplete="off">
+
+          <label for="kutu-emoji">Emoji <span class="istege-bagli">(isteğe bağlı)</span></label>
+          <input id="kutu-emoji" type="text" maxlength="12" placeholder="🌙" autocomplete="off">
+          <p class="ipucu">Windows'ta emoji klavyesi: Windows tuşu + nokta. Boş bırakırsan ya da emoji dışında bir şey yazarsan 🌱 kullanılır.</p>
+
+          <label for="kutu-hedef">Hedefin <span class="istege-bagli">(isteğe bağlı)</span></label>
+          <input id="kutu-hedef" type="text" maxlength="80" placeholder="örn. Akşamları atıştırmamak" autocomplete="off">
+
+          <p class="form-hata" id="form-hata" role="alert"></p>
+
+          <div class="form-dugmeler">
+            <button type="submit" class="dugme-ana">Kutuyu aç</button>
+            <button type="button" class="dugme-ikincil" id="vazgec">Vazgeç</button>
+          </div>
+        </form>
       </div>
+
+      <noscript><p class="yardimci">Bu uygulama JavaScript ile çalışır. Tarayıcında JavaScript kapalı görünüyor.</p></noscript>
     </section>
 
     <footer class="alt">
