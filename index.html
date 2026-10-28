@@ -17,6 +17,7 @@
     </header>
 
     <section class="orta" aria-labelledby="kutular-baslik">
+      <div id="kutu-ekrani">
       <h2 id="kutular-baslik">Konu kutuların</h2>
 
       <ul class="kutu-listesi" id="kutu-listesi"></ul>
@@ -46,6 +47,54 @@
           </div>
         </form>
       </div>
+      </div>
+
+      <!-- Akış ekranı: bir kutu seçilince burası açılır, içi app.js ile kurulur -->
+      <div id="akis-ekrani" class="kart akis" hidden>
+        <button type="button" class="dugme-ikincil geri-dugme" id="akis-geri">← Kutulara dön</button>
+
+        <div class="akis-baslik-alani">
+          <span class="akis-emoji" id="akis-emoji" aria-hidden="true"></span>
+          <h2 class="akis-baslik" id="akis-baslik" tabindex="-1"></h2>
+          <p class="akis-hedef" id="akis-hedef"></p>
+        </div>
+
+        <div id="akis-yaz">
+          <label for="an-yazisi">Şu an ne oluyor?</label>
+          <textarea id="an-yazisi" rows="3" maxlength="200" placeholder="Birkaç kelime yeter..."></textarea>
+          <p class="sayac-yazi" id="an-sayac" aria-hidden="true">0 / 200</p>
+          <p class="form-hata" id="an-uyari" role="alert"></p>
+          <button type="button" class="dugme-ana tam" id="oneri-dugme">Önerileri göster</button>
+        </div>
+
+        <div id="akis-oneriler" hidden>
+          <p class="akis-ara-baslik">Birini seçebilirsin:</p>
+          <ul class="oneri-listesi" id="oneri-listesi"></ul>
+
+          <label for="kendi-dogru">Sence ne yapmalısın?</label>
+          <textarea id="kendi-dogru" rows="2" maxlength="200" placeholder="Kendi doğrunu yaz..."></textarea>
+          <p class="form-hata" id="dogru-uyari" role="alert"></p>
+          <button type="button" class="dugme-ana tam" id="sec-dugme">Bunu seçiyorum</button>
+          <button type="button" class="dugme-bekle tam" id="bekle-dugme">Düşünmeye devam ediyorum</button>
+        </div>
+
+        <div id="akis-sonuc" hidden>
+          <p class="sonuc-kutu" id="sonuc-yazi"></p>
+          <div class="form-dugmeler">
+            <button type="button" class="dugme-ana" id="yeni-an">Yeni bir an yaz</button>
+            <button type="button" class="dugme-ikincil" id="sonuc-geri">Kutulara dön</button>
+          </div>
+        </div>
+
+        <div id="akis-bekle" hidden>
+          <p class="bekle-kutu" id="bekle-yazi"></p>
+          <p class="geri-sayim" id="geri-sayim">10:00</p>
+          <button type="button" class="dugme-ana dugme-mavi tam" id="secenekler-dugme" hidden>Seçeneklere dön</button>
+        </div>
+
+        <!-- Ekran okuyucuya durum bildirir (sonuç, süre bitişi) -->
+        <p class="sadece-okuyucu" id="durum-bildirim" aria-live="polite"></p>
+      </div>
 
       <noscript><p class="yardimci">Bu uygulama JavaScript ile çalışır. Tarayıcında JavaScript kapalı görünüyor.</p></noscript>
     </section>
@@ -55,6 +104,7 @@
     </footer>
 
   </main>
+  <div id="kutlama" aria-hidden="true"></div>
   <script src="app.js"></script>
 </body>
 </html>
