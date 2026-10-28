@@ -1,0 +1,120 @@
+/* ---------- Renkler (tek yerde tanımlı) ---------- */
+:root {
+  --zemin: #1E1D26;
+  --kart: #292833;
+  --kenarlik: #3D3B4A;
+  --yazi: #ECE8EE;
+  --yardimci: #A9A6B8;
+
+  --dur: #F0C4A8;       /* pudra şeftali: bir an dur */
+  --bekle: #9DBCE0;     /* pastel mavi: düşünmeye devam */
+  --dogru: #A8CDB5;     /* pudra adaçayı: doğru adım */
+  --kutlama: #EBB9C6;   /* pudra pembe: seri, rozet */
+  --olmadi: #B9ADD6;    /* lavanta: bu sefer olmadı */
+
+  --yaricap: 20px;
+}
+
+/* ---------- Genel ayarlar ---------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--zemin);
+  color: var(--yazi);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* ---------- Sayfa düzeni (telefon öncelikli) ---------- */
+.sayfa {
+  max-width: 480px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 2rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ---------- Üst alan ---------- */
+.ust {
+  text-align: center;
+  padding-top: 1rem;
+}
+
+.isaret {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.isaret span {
+  width: 8px;
+  height: 26px;
+  border-radius: 4px;
+  background: var(--dur);
+}
+
+h1 {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.slogan {
+  margin: 0.25rem 0 0;
+  font-size: 1.1rem;
+  color: var(--dur);
+}
+
+/* ---------- Orta alan ---------- */
+.orta {
+  flex: 1;
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--yardimci);
+}
+
+.kart {
+  background: var(--kart);
+  border: 1px solid var(--kenarlik);
+  border-radius: var(--yaricap);
+  padding: 1.5rem 1.25rem;
+}
+
+.bos-kart {
+  text-align: center;
+  border-style: dashed;
+}
+
+.bos-kart p {
+  margin: 0;
+}
+
+.bos-kart .yardimci {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--yardimci);
+}
+
+/* ---------- Alt alan ---------- */
+.alt {
+  padding-top: 1rem;
+  border-top: 1px solid var(--kenarlik);
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--yardimci);
+}
+
+.alt p {
+  margin: 0;
+}
