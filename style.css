@@ -290,6 +290,7 @@ h2 {
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
+summary:focus-visible,
 .akis-baslik:focus-visible {
   outline: 2px solid var(--bekle);
   outline-offset: 2px;
@@ -466,6 +467,189 @@ textarea:focus-visible,
   clip: rect(0 0 0 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ---------- Aşama 4a: kayıt, olmadı yolu, seri, silme ---------- */
+.depo-notu {
+  margin: 0;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--kenarlik);
+  border-radius: 14px;
+  background: var(--kart);
+  color: var(--yardimci);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.depo-notu[hidden] {
+  display: none;
+}
+
+.dugme-olmadi {
+  padding: 0.75rem 1.1rem;
+  background: var(--olmadi);
+  color: var(--zemin);
+  border: 1px solid var(--olmadi);
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bekle-satir {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.bekle-satir .dugme-bekle,
+.bekle-satir .dugme-olmadi {
+  flex: 1 1 10rem;
+  margin-top: 0;
+}
+
+.bekle-sonrasi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.sonuc-kutu.olmadi {
+  background: var(--olmadi);
+}
+
+.sonuc-kutu.olmadi::before {
+  content: "\25D0 ";
+  content: "\25D0 " / "";
+}
+
+.seri-satir {
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+  color: var(--kutlama);
+}
+
+.seri-satir:empty,
+.hak-satir:empty {
+  display: none;
+}
+
+.hak-satir {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--yardimci);
+}
+
+.seri-nasil {
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--yardimci);
+}
+
+.seri-nasil summary {
+  display: inline-block;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.seri-nasil p {
+  margin: 0.4rem 0 0;
+  text-align: left;
+  line-height: 1.5;
+}
+
+.hazir-kucuk[hidden] {
+  display: none;
+}
+
+.hazir-kucuk {
+  display: block;
+  margin: 0 auto 0.5rem;
+}
+
+.sonuc-seri {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.kutu-seri {
+  font-size: 0.8rem;
+  color: var(--kutlama);
+}
+
+.uydu-blok {
+  margin: 0 0 1rem;
+}
+
+.uydu-soru {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  color: var(--yardimci);
+}
+
+.bos-kart {
+  margin-bottom: 0.75rem;
+}
+
+.kutu-listesi[hidden] {
+  display: none;
+}
+
+.bos-dugme {
+  margin-top: 1rem;
+}
+
+.dugme-sessiz {
+  align-self: flex-start;
+  padding: 0.4rem 0.2rem;
+  background: transparent;
+  color: var(--yardimci);
+  border: none;
+  font: inherit;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dugme-sessiz:hover {
+  color: var(--yazi);
+}
+
+.silme-alani {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.onay-alani {
+  padding: 1rem;
+  border: 1px solid var(--dur);
+  border-radius: 14px;
+  font-size: 0.95rem;
+}
+
+.onay-alani[hidden] {
+  display: none;
+}
+
+.onay-alani p {
+  margin: 0 0 0.75rem;
+}
+
+.alt .veri-notu {
+  margin-top: 0.75rem;
+}
+
+.alt .dugme-sessiz {
+  display: inline-block;
+}
+
+.alt .onay-alani {
+  margin-top: 0.75rem;
+  text-align: left;
 }
 
 /* ---------- Kutlama parçacıkları ---------- */

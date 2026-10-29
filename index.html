@@ -16,11 +16,18 @@
       <p class="slogan">Bir an dur. Seçim senin.</p>
     </header>
 
+    <p class="depo-notu" id="depo-notu" role="status" aria-live="polite" hidden></p>
+
     <section class="orta" aria-labelledby="kutular-baslik">
       <div id="kutu-ekrani">
       <h2 id="kutular-baslik">Konu kutuların</h2>
 
       <ul class="kutu-listesi" id="kutu-listesi"></ul>
+      <div class="kart bos-kart" id="bos-kart" hidden>
+        <p>Henüz kutun yok. Kendi kutunu açabilir ya da hazır kutuları geri getirebilirsin.</p>
+        <button type="button" class="dugme-ana tam bos-dugme" id="hazirlari-getir">Hazır kutuları geri getir</button>
+      </div>
+      <button type="button" class="dugme-sessiz hazir-kucuk" id="hazirlari-getir-kucuk" hidden>Silinen hazır kutuları geri getir</button>
       <p class="secim-bilgi" id="secim-bilgi" aria-live="polite"></p>
 
       <div class="kart yeni-kutu">
@@ -57,6 +64,12 @@
           <span class="akis-emoji" id="akis-emoji" aria-hidden="true"></span>
           <h2 class="akis-baslik" id="akis-baslik" tabindex="-1"></h2>
           <p class="akis-hedef" id="akis-hedef"></p>
+          <p class="seri-satir" id="akis-seri"></p>
+          <p class="hak-satir" id="akis-hak"></p>
+          <details class="seri-nasil">
+            <summary>Bu ne demek?</summary>
+            <p>Art arda: bugün ‘Bu sefer olmadı’ demeden üst üste seçtiğin doğru adımlar. Gün serisi: üst üste kaç gün en az bir doğru adım seçtin ve ‘olmadı’ sayın 2'yi geçmedi. Her gün her kutu için 2 ‘olmadı’ hakkın var; üçüncüsü o günü ve gün serisini sıfırlar. Önceki günlerin olduğu gibi kalır.</p>
+          </details>
         </div>
 
         <div id="akis-yaz">
@@ -75,11 +88,25 @@
           <textarea id="kendi-dogru" rows="2" maxlength="200" placeholder="Kendi doğrunu yaz..."></textarea>
           <p class="form-hata" id="dogru-uyari" role="alert"></p>
           <button type="button" class="dugme-ana tam" id="sec-dugme">Bunu seçiyorum</button>
-          <button type="button" class="dugme-bekle tam" id="bekle-dugme">Düşünmeye devam ediyorum</button>
+          <div class="bekle-satir">
+            <button type="button" class="dugme-bekle" id="bekle-dugme">Düşünmeye devam ediyorum</button>
+            <button type="button" class="dugme-olmadi" id="olmadi-dugme">Bu sefer olmadı</button>
+          </div>
         </div>
 
         <div id="akis-sonuc" hidden>
           <p class="sonuc-kutu" id="sonuc-yazi"></p>
+
+          <div class="uydu-blok" id="uydu-blok" hidden>
+            <p class="uydu-soru" id="uydu-soru">Seçtiğin adım hedefine uydu mu?</p>
+            <div class="form-dugmeler">
+              <button type="button" class="dugme-ikincil" id="uydu-evet">Evet, uydu</button>
+              <button type="button" class="dugme-olmadi" id="uydu-olmadi">Bu sefer olmadı</button>
+            </div>
+          </div>
+
+          <p class="seri-satir sonuc-seri" id="sonuc-seri"></p>
+
           <div class="form-dugmeler">
             <button type="button" class="dugme-ana" id="yeni-an">Yeni bir an yaz</button>
             <button type="button" class="dugme-ikincil" id="sonuc-geri">Kutulara dön</button>
@@ -89,7 +116,22 @@
         <div id="akis-bekle" hidden>
           <p class="bekle-kutu" id="bekle-yazi"></p>
           <p class="geri-sayim" id="geri-sayim">10:00</p>
+          <div class="bekle-sonrasi" id="bekle-sonrasi" hidden>
+            <button type="button" class="dugme-ana tam" id="bekle-dogru">Doğru adımı seçtim</button>
+            <button type="button" class="dugme-olmadi tam" id="bekle-olmadi">Bu sefer olmadı</button>
+          </div>
           <button type="button" class="dugme-ana dugme-mavi tam" id="secenekler-dugme" hidden>Seçeneklere dön</button>
+        </div>
+
+        <div class="silme-alani">
+          <button type="button" class="dugme-sessiz" id="kutu-sil">Bu kutuyu sil</button>
+          <div class="onay-alani" id="kutu-onay" role="group" aria-labelledby="kutu-onay-metin" hidden>
+            <p id="kutu-onay-metin"></p>
+            <div class="form-dugmeler">
+              <button type="button" class="dugme-ikincil" id="kutu-onay-vazgec">Vazgeç</button>
+              <button type="button" class="dugme-ana" id="kutu-onay-evet">Evet, sil</button>
+            </div>
+          </div>
         </div>
 
         <!-- Ekran okuyucuya durum bildirir (sonuç, süre bitişi) -->
@@ -101,6 +143,15 @@
 
     <footer class="alt">
       <p>Bu uygulama tıbbi veya psikolojik tavsiye değildir. Zorlandığında bir uzmandan destek almak güçlü bir adımdır.</p>
+      <p class="veri-notu">Verilerin sadece bu cihazda, bu tarayıcıda durur.</p>
+      <button type="button" class="dugme-sessiz" id="tum-sil">Tüm verilerimi sil</button>
+      <div class="onay-alani" id="tum-onay" role="group" aria-labelledby="tum-onay-metin" hidden>
+        <p id="tum-onay-metin"></p>
+        <div class="form-dugmeler">
+          <button type="button" class="dugme-ikincil" id="tum-onay-vazgec">Vazgeç</button>
+          <button type="button" class="dugme-ana" id="tum-onay-evet">Evet, sil</button>
+        </div>
+      </div>
     </footer>
 
   </main>

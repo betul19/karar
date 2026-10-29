@@ -100,6 +100,33 @@ const METINLER = {
   // Kullanıcı kendi doğrusunu yazıp seçince
   kendiDogru: "Kendi doğrunu biliyorsun ve yazdın. Farkındalık tam olarak bu.",
 
+  // Art arda doğru adımlar ve gün serisi metinleri. Not: "2" ve ekler hak = 2 varsayımıyla.
+  seri: {
+    baslik: "Art arda: {anlik} · Gün serisi: {mevcut} gün",
+    hakBas: "Bugünkü ‘olmadı’ hakkın: {hak}'den ",
+    hakHicbiri: "hiçbiri kullanılmadı",
+    hakKullanildi: "{olmadi} kullanıldı",
+    hakDoldu: "Bugünkü ‘olmadı’ hakkın doldu",
+    nasilBaslik: "Bu ne demek?",
+    nasilMetin: "Art arda: bugün ‘Bu sefer olmadı’ demeden üst üste seçtiğin doğru adımlar. Gün serisi: üst üste kaç gün en az bir doğru adım seçtin ve ‘olmadı’ sayın 2'yi geçmedi. Her gün her kutu için 2 ‘olmadı’ hakkın var; üçüncüsü o günü ve gün serisini sıfırlar. Önceki günlerin olduğu gibi kalır.",
+
+    dogruIlk: "İlk doğru adım. Güzel bir başlangıç.",
+    dogruYeniden: "Yeniden başladın. Bu da bir doğru adım.",
+    dogruArdArda: "Art arda {n} doğru adım. Devam!",
+
+    olmadiOncekiVar: "Bu sefer olmadı. Bugünkü serin {p} adımdı, yeni bir başlangıç yapabilirsin. Günlük 2 hakkından {kullanilan}'ini kullandın, gün serin korunuyor.",
+    olmadiOncekiYok: "Bu sefer olmadı, ve bu da olur. Günlük 2 hakkından {kullanilan}'ini kullandın, gün serin korunuyor.",
+    olmadiHakBitti: "Bu sefer olmadı. İki hakkını da kullandın. Bir ‘olmadı’ daha gün serini sıfırlar, ama yeni bir gün her zaman başlıyor.",
+    olmadiBozuk: "Bugün olmadı sayın 2'yi geçti, gün serin sıfırlandı. Yarın yeni bir başlangıç.",
+    olmadiBozukEnUzun: " En uzun gün serin {en} gündü."
+  },
+
+  // Kayıt ve silme ile ilgili mesajlar
+  depo: {
+    bozuk: "Kayıtlı veri okunamadı, temiz bir başlangıç yaptım.",
+    yok: "Bu tarayıcı kayıt tutmuyor. Bu oturumda devam edebilirsin ama sayfayı kapatınca kayıtlar gider."
+  },
+
   // "Düşünmeye devam ediyorum"
   beklemeMesaji: "Acele yok. Bir nefes al, 10 dakika sonra tekrar bakalım.",
   sureBitti: "10 dakika geçti. Şimdi nasıl hissediyorsun?",
@@ -127,10 +154,275 @@ const hazirKutular = [
   { id: "erteleme", emoji: "⏳", ad: "Erteleme", hedef: "Küçük bir adımla başlamak" }
 ];
 
-let kutular = hazirKutular.slice();
+const DEPO_ANAHTARI = "karar-v1";
+const DEPO_SURUMU = 1;
+const EN_FAZLA_KAYIT = 2000;
+const GUNLUK_OLMADI_HAKKI = 2; // bir kutuda bir günde "olmadı" hakkı (aşılırsa o gün bozulur)
+const DOGRULAMA_EN_FAZLA_KUTU = 50;
+const SONUCLAR = ["dogru", "olmadi", "dusunuyor"];
+const ADIM_TURLERI = ["oneri", "kendi", ""];
+
+// =====================================================================
+// DEPOLAMA: localStorage SADECE bu bölümde geçer.
+// Diğer yerler depoOku / depoYaz / depoSil fonksiyonlarını kullanır.
+// =====================================================================
+function varsayilanVeri() {
+  return {
+    surum: DEPO_SURUMU,
+    kutular: hazirKutular.map(function (k) { return Object.assign({}, k); }),
+    kayitlar: []
+  };
+}
+
+function metinMi(deger, enFazla) {
+  return typeof deger === "string" && deger.length <= enFazla;
+}
+
+function kutuIdGecerliMi(id) {
+  if (!metinMi(id, 40)) return false;
+  return hazirKutular.some(function (k) { return k.id === id; }) || /^kendi-\d+$/.test(id);
+}
+
+// Okunan veri beklenen şekilde mi? Değilse null döner.
+function veriyiDogrula(ham) {
+  if (!ham || typeof ham !== "object" || Array.isArray(ham)) return null;
+  if (ham.surum !== DEPO_SURUMU) return null;
+  if (!Array.isArray(ham.kutular) || !Array.isArray(ham.kayitlar)) return null;
+  if (ham.kutular.length > DOGRULAMA_EN_FAZLA_KUTU || ham.kayitlar.length > EN_FAZLA_KAYIT) return null;
+
+  const kutular = [];
+  const kutuIdleri = {};
+  for (const k of ham.kutular) {
+    if (!k || typeof k !== "object") return null;
+    if (!kutuIdGecerliMi(k.id) || kutuIdleri[k.id] === true) return null;
+    if (!metinMi(k.emoji, 12) || !metinMi(k.ad, 24) || !metinMi(k.hedef, 80)) return null;
+    if (k.ad.trim() === "") return null;
+    kutuIdleri[k.id] = true;
+    kutular.push({ id: k.id, emoji: k.emoji, ad: k.ad, hedef: k.hedef });
+  }
+
+  const kayitlar = [];
+  const kayitIdleri = {};
+  for (const r of ham.kayitlar) {
+    if (!r || typeof r !== "object") return null;
+    if (!metinMi(r.id, 60) || r.id === "" || kayitIdleri[r.id] === true) return null;
+    if (!metinMi(r.kutuId, 40) || !metinMi(r.zaman, 40)) return null;
+    if (Number.isNaN(new Date(r.zaman).getTime())) return null;
+    if (!metinMi(r.an, 200) || !metinMi(r.adim, 300)) return null;
+    if (ADIM_TURLERI.indexOf(r.adimTuru) === -1 || SONUCLAR.indexOf(r.sonuc) === -1) return null;
+    // sonucZamani isteğe bağlı (eski kayıtlarda yok); varsa geçerli bir tarih olmalı
+    if (r.sonucZamani !== undefined) {
+      if (!metinMi(r.sonucZamani, 40) || Number.isNaN(new Date(r.sonucZamani).getTime())) return null;
+    }
+    kayitIdleri[r.id] = true;
+    // Kutusu silinmiş (yetim) kayıtlar sessizce atılır
+    if (kutuIdleri[r.kutuId] === true) {
+      const temiz = {
+        id: r.id, kutuId: r.kutuId, zaman: r.zaman, an: r.an,
+        adim: r.adim, adimTuru: r.adimTuru, sonuc: r.sonuc
+      };
+      if (r.sonucZamani !== undefined) temiz.sonucZamani = r.sonucZamani;
+      kayitlar.push(temiz);
+    }
+  }
+
+  return { surum: DEPO_SURUMU, kutular: kutular, kayitlar: kayitlar };
+}
+
+// Döner: { veri, durum } — durum: "tamam" | "bozuk" | "yok"
+function depoOku() {
+  let metin;
+  try {
+    metin = window.localStorage.getItem(DEPO_ANAHTARI);
+  } catch (hata) {
+    return { veri: varsayilanVeri(), durum: "yok" };
+  }
+  if (metin === null) return { veri: varsayilanVeri(), durum: "tamam" };
+
+  try {
+    const dogru = veriyiDogrula(JSON.parse(metin));
+    if (dogru) return { veri: dogru, durum: "tamam" };
+  } catch (hata) {
+    // JSON hatası: aşağıda "bozuk" olarak ele alınır
+  }
+  return { veri: varsayilanVeri(), durum: "bozuk" };
+}
+
+// Döner: yazılabildiyse true
+function depoYaz(veri) {
+  try {
+    window.localStorage.setItem(DEPO_ANAHTARI, JSON.stringify(veri));
+    return true;
+  } catch (hata) {
+    return false;
+  }
+}
+
+function depoSil() {
+  try {
+    window.localStorage.removeItem(DEPO_ANAHTARI);
+    return true;
+  } catch (hata) {
+    return false;
+  }
+}
+
+// =====================================================================
+// SERİ HESABI: saf fonksiyonlar (sayfaya bağlı değil, bugünü parametre alır)
+// =====================================================================
+function yerelGun(tarih) {
+  const ay = String(tarih.getMonth() + 1).padStart(2, "0");
+  const gun = String(tarih.getDate()).padStart(2, "0");
+  return tarih.getFullYear() + "-" + ay + "-" + gun;
+}
+
+// "YYYY-MM-DD" -> gün numarası (yaz saati kaymasından etkilenmez)
+function gunNumarasi(gunYazisi) {
+  const parca = gunYazisi.split("-");
+  return Date.UTC(Number(parca[0]), Number(parca[1]) - 1, Number(parca[2])) / 86400000;
+}
+
+// Bir kutunun BİR gününe ait kayıtları özetler. Sıralama: sonucZamani (yoksa zaman).
+// Art arda sayacı: dogru +1, olmadi sayacı 0'a çeker, dusunuyor ne artırır ne bozar.
+// oncekiAnlik: günün en son "olmadi" kaydından hemen önceki art arda sayısı.
+// Günün son kaydı (dusunuyor sayılmaz) olmadi değilse ya da hiç olmadi yoksa 0'dır.
+function gunKayitlariniOzetle(liste) {
+  const sirali = liste
+    .map(function (r, i) {
+      return { r: r, t: Date.parse(r.sonucZamani || r.zaman), i: i };
+    })
+    .sort(function (a, b) { return a.t - b.t || a.i - b.i; });
+
+  let dogru = 0;
+  let olmadi = 0;
+  let dusunuyor = 0;
+  let anlik = 0;
+  let enIyi = 0;
+  let sayacOlmadidanOnce = 0;
+  let sonOlmadiMi = false;
+
+  sirali.forEach(function (o) {
+    if (o.r.sonuc === "dogru") {
+      dogru += 1;
+      anlik += 1;
+      if (anlik > enIyi) enIyi = anlik;
+      sonOlmadiMi = false;
+    } else if (o.r.sonuc === "olmadi") {
+      olmadi += 1;
+      sayacOlmadidanOnce = anlik;
+      anlik = 0;
+      sonOlmadiMi = true;
+    } else {
+      dusunuyor += 1;
+    }
+  });
+
+  return {
+    dogru: dogru,
+    olmadi: olmadi,
+    dusunuyor: dusunuyor,
+    anlik: anlik,
+    enIyi: enIyi,
+    oncekiAnlik: sonOlmadiMi ? sayacOlmadidanOnce : 0,
+    kalanHak: Math.max(0, GUNLUK_OLMADI_HAKKI - olmadi),
+    tamam: dogru >= 1 && olmadi <= GUNLUK_OLMADI_HAKKI,
+    bozuk: olmadi > GUNLUK_OLMADI_HAKKI
+  };
+}
+
+// Bir kutunun bir günü ("YYYY-MM-DD", yerel gün) için özet
+function gunOzeti(kayitlar, kutuId, gunStr) {
+  return gunKayitlariniOzetle(kayitlar.filter(function (r) {
+    return r.kutuId === kutuId && yerelGun(new Date(r.zaman)) === gunStr;
+  }));
+}
+
+// Gün serisi: art arda "tamam" günler. Gün = kaydın zaman alanının yerel günü.
+function gunSerisi(kayitlar, kutuId, bugunStr) {
+  const gruplar = {};
+  kayitlar.forEach(function (r) {
+    if (r.kutuId !== kutuId) return;
+    const no = gunNumarasi(yerelGun(new Date(r.zaman)));
+    (gruplar[no] = gruplar[no] || []).push(r);
+  });
+
+  const ozetler = {};
+  const tamamGunler = [];
+  Object.keys(gruplar).forEach(function (no) {
+    ozetler[no] = gunKayitlariniOzetle(gruplar[no]);
+    if (ozetler[no].tamam) tamamGunler.push(Number(no));
+  });
+  tamamGunler.sort(function (a, b) { return a - b; });
+
+  let enUzun = 0;
+  let dizi = 0;
+  tamamGunler.forEach(function (g, i) {
+    dizi = i > 0 && tamamGunler[i - 1] === g - 1 ? dizi + 1 : 1;
+    if (dizi > enUzun) enUzun = dizi;
+  });
+
+  // Bugün tamamsa bugünden, bozuksa 0, henüz doğru yoksa (ama bozuk değilse) dünden geriye
+  const bugunNo = gunNumarasi(bugunStr);
+  const bugun = ozetler[bugunNo];
+  let mevcut = 0;
+  if (!(bugun && bugun.bozuk)) {
+    let g = bugun && bugun.tamam ? bugunNo : bugunNo - 1;
+    while (ozetler[g] && ozetler[g].tamam) {
+      mevcut += 1;
+      g -= 1;
+    }
+  }
+
+  return { mevcut: mevcut, enUzun: enUzun };
+}
+
+function gunYazisi(n) {
+  return n + " gün";
+}
+
+// ---------- Seri metinleri (METINLER.seri'den) ----------
+function seriBaslikMetni(ozet, seri) {
+  return METINLER.seri.baslik
+    .replace("{anlik}", ozet.anlik)
+    .replace("{mevcut}", seri.mevcut);
+}
+
+function hakMetni(ozet) {
+  if (ozet.bozuk) return METINLER.seri.hakDoldu;
+  const bas = METINLER.seri.hakBas.replace("{hak}", GUNLUK_OLMADI_HAKKI);
+  if (ozet.olmadi === 0) return bas + METINLER.seri.hakHicbiri;
+  return bas + METINLER.seri.hakKullanildi.replace("{olmadi}", ozet.olmadi);
+}
+
+function dogruSonucMetni(ozet) {
+  if (ozet.anlik >= 2) return METINLER.seri.dogruArdArda.replace("{n}", ozet.anlik);
+  if (ozet.olmadi > 0) return METINLER.seri.dogruYeniden;
+  return METINLER.seri.dogruIlk;
+}
+
+// Not: metinlerdeki sayılar ve Türkçe ekler ("2'yi", "2'den") hak = 2 varsayımıyla yazıldı.
+// GUNLUK_OLMADI_HAKKI değişirse METINLER.seri cümleleri de gözden geçirilmeli.
+function olmadiSonucMetni(ozet, seri) {
+  if (ozet.bozuk) {
+    return METINLER.seri.olmadiBozuk + (seri.enUzun > 0
+      ? METINLER.seri.olmadiBozukEnUzun.replace("{en}", seri.enUzun)
+      : "");
+  }
+  if (ozet.olmadi >= GUNLUK_OLMADI_HAKKI) return METINLER.seri.olmadiHakBitti;
+  return (ozet.oncekiAnlik >= 1 ? METINLER.seri.olmadiOncekiVar : METINLER.seri.olmadiOncekiYok)
+    .replace("{p}", ozet.oncekiAnlik)
+    .replace("{kullanilan}", ozet.olmadi);
+}
+
+// ---------- Uygulama durumu ----------
+const ilkOkuma = depoOku();
+let veri = ilkOkuma.veri;
 let aktifKutu = null;      // akışta açık olan kutu
+let aktifKayitId = null;   // akışta üzerinde çalışılan kayıt
+let sonAn = "";            // kayıtta saklanacak, en son yazılan an
 let sonOneriler = [];      // en son gösterilen öneriler
 let sayacZamanlayici = null;
+let aktifOnay = null;      // açık onay alanı: { alan, tetikleyen, ... }
 
 // ---------- Sayfadaki öğeleri bul ----------
 const kutuEkrani = document.getElementById("kutu-ekrani");
@@ -171,6 +463,48 @@ const secenekDugme = document.getElementById("secenekler-dugme");
 const durumBildirim = document.getElementById("durum-bildirim");
 const kutlamaAlani = document.getElementById("kutlama");
 
+const depoNotu = document.getElementById("depo-notu");
+const bosKart = document.getElementById("bos-kart");
+const hazirlariGetir = document.getElementById("hazirlari-getir");
+const hazirlariGetirKucuk = document.getElementById("hazirlari-getir-kucuk");
+const akisHak = document.getElementById("akis-hak");
+const akisSeri = document.getElementById("akis-seri");
+const olmadiDugme = document.getElementById("olmadi-dugme");
+const sonucSeri = document.getElementById("sonuc-seri");
+const uyduBlok = document.getElementById("uydu-blok");
+const uyduEvet = document.getElementById("uydu-evet");
+const uyduOlmadi = document.getElementById("uydu-olmadi");
+const bekleSonrasi = document.getElementById("bekle-sonrasi");
+const bekleDogru = document.getElementById("bekle-dogru");
+const bekleOlmadi = document.getElementById("bekle-olmadi");
+const kutuSil = document.getElementById("kutu-sil");
+const tumSil = document.getElementById("tum-sil");
+const onayAlanlari = {
+  kutu: {
+    alan: document.getElementById("kutu-onay"),
+    metin: document.getElementById("kutu-onay-metin"),
+    vazgec: document.getElementById("kutu-onay-vazgec"),
+    evet: document.getElementById("kutu-onay-evet")
+  },
+  tum: {
+    alan: document.getElementById("tum-onay"),
+    metin: document.getElementById("tum-onay-metin"),
+    vazgec: document.getElementById("tum-onay-vazgec"),
+    evet: document.getElementById("tum-onay-evet")
+  }
+};
+
+// ---------- Depolama notu (başlığın altında) ----------
+function depoNotuGoster(metin) {
+  depoNotu.textContent = metin;
+  depoNotu.hidden = false;
+}
+
+// Kaydet; yazılamazsa uygulama bellekte devam eder ve sakin bir not gösterir
+function kaydet() {
+  if (!depoYaz(veri)) depoNotuGoster(METINLER.depo.yok);
+}
+
 // ---------- Yazılan metinden ilk emojiyi ayıkla ----------
 const EMOJI_DESENI = /\p{Extended_Pictographic}(?:️|\p{Emoji_Modifier})?(?:‍\p{Extended_Pictographic}(?:️|\p{Emoji_Modifier})?)*/u;
 
@@ -179,11 +513,19 @@ function emojiAyikla(metin) {
   return eslesme ? eslesme[0] : VARSAYILAN_EMOJI;
 }
 
-// ---------- Kutuları ekrana çiz ----------
-function kutulariCiz(odaklanacakId) {
-  liste.replaceChildren();
+function hazirVarMi(hazir) {
+  return veri.kutular.some(function (k) { return k.id === hazir.id; });
+}
 
-  kutular.forEach(function (kutu) {
+// ---------- Kutuları ekrana çiz ----------
+function kutulariCiz(odaklanacakId, bilgi) {
+  liste.replaceChildren();
+  liste.hidden = veri.kutular.length === 0;
+  bosKart.hidden = veri.kutular.length !== 0;
+  const bugunStr = yerelGun(new Date());
+  hazirlariGetirKucuk.hidden = veri.kutular.length === 0 || hazirKutular.every(hazirVarMi);
+
+  veri.kutular.forEach(function (kutu) {
     const satir = document.createElement("li");
     const dugme = document.createElement("button");
     dugme.type = "button";
@@ -208,6 +550,17 @@ function kutulariCiz(odaklanacakId) {
       dugme.append(hedef);
     }
 
+    const seri = gunSerisi(veri.kayitlar, kutu.id, bugunStr);
+    if (seri.mevcut >= 1) {
+      const seriYazi = document.createElement("span");
+      seriYazi.className = "kutu-seri";
+      const okuyucu = document.createElement("span");
+      okuyucu.className = "sadece-okuyucu";
+      okuyucu.textContent = "Gün serisi: ";
+      seriYazi.append(okuyucu, document.createTextNode(gunYazisi(seri.mevcut)));
+      dugme.append(seriYazi);
+    }
+
     dugme.addEventListener("click", function () {
       akisiAc(kutu);
     });
@@ -216,7 +569,7 @@ function kutulariCiz(odaklanacakId) {
     liste.append(satir);
   });
 
-  secimBilgi.textContent = "Bir kutu seç ya da kendi kutunu aç.";
+  secimBilgi.textContent = bilgi || (veri.kutular.length === 0 ? "" : "Bir kutu seç ya da kendi kutunu aç.");
 
   if (odaklanacakId) {
     const hedefDugme = liste.querySelector('[data-id="' + odaklanacakId + '"]');
@@ -262,7 +615,7 @@ form.addEventListener("submit", function (olay) {
     adKutusu.focus();
     return;
   }
-  if (kutular.length >= EN_FAZLA_KUTU) {
+  if (veri.kutular.length >= EN_FAZLA_KUTU) {
     hataYazisi.textContent = "En fazla " + EN_FAZLA_KUTU + " kutun olabilir. Önce birini ayırmak gerekecek.";
     return;
   }
@@ -274,7 +627,8 @@ form.addEventListener("submit", function (olay) {
     hedef: hedefKutusu.value.trim()
   };
 
-  kutular.push(yeni);
+  veri.kutular.push(yeni);
+  kaydet();
   formuKapat();
   kutulariCiz(yeni.id);
 });
@@ -329,9 +683,71 @@ function sayacYazisiniGuncelle() {
   anSayac.textContent = anYazisi.value.length + " / 200";
 }
 
+// ---------- Kayıt yardımcıları ----------
+function yeniKayitId() {
+  return "k-" + Date.now() + "-" + Math.floor(Math.random() * 1e6);
+}
+
+// Akıştaki kaydı günceller; henüz yoksa oluşturur. Bir akışta hep aynı kayıt kullanılır.
+// adim / adimTuru verilmezse mevcut değerler (yeni kayıtta boş) korunur.
+function kaydiYaz(sonuc, adim, adimTuru) {
+  let kayit = veri.kayitlar.find(function (r) { return r.id === aktifKayitId; });
+
+  if (!kayit) {
+    kayit = {
+      id: yeniKayitId(),
+      kutuId: aktifKutu.id,
+      zaman: new Date().toISOString(),
+      an: sonAn,
+      adim: "",
+      adimTuru: "",
+      sonuc: sonuc
+    };
+    veri.kayitlar.push(kayit);
+    aktifKayitId = kayit.id;
+    // En fazla EN_FAZLA_KAYIT kayıt: aşılırsa en eskiler silinir
+    if (veri.kayitlar.length > EN_FAZLA_KAYIT) {
+      veri.kayitlar.splice(0, veri.kayitlar.length - EN_FAZLA_KAYIT);
+    }
+  }
+
+  kayit.sonuc = sonuc;
+  kayit.sonucZamani = new Date().toISOString(); // sonuç belirlenince / değişince
+  if (adim !== undefined) {
+    kayit.adim = adim;
+    kayit.adimTuru = adimTuru;
+  }
+  kaydet();
+  akisSeriGuncelle();
+}
+
+// Bugünün özeti ve gün serisi, her seferinde kayıtlardan yeniden hesaplanır
+function bugunOzeti() {
+  return gunOzeti(veri.kayitlar, aktifKutu.id, yerelGun(new Date()));
+}
+
+function bugunGunSerisi() {
+  return gunSerisi(veri.kayitlar, aktifKutu.id, yerelGun(new Date()));
+}
+
+function akisSeriGuncelle() {
+  if (!aktifKutu) {
+    akisSeri.textContent = "";
+    akisHak.textContent = "";
+    return;
+  }
+  const ozet = bugunOzeti();
+  akisSeri.textContent = seriBaslikMetni(ozet, bugunGunSerisi());
+  akisHak.textContent = hakMetni(ozet);
+}
+
 // ---------- Akışı aç / kapat ----------
 function akisiAc(kutu) {
+  onayKapat(false);
   aktifKutu = kutu;
+  aktifKayitId = null;
+  sonAn = "";
+  akisSeriGuncelle();
   akisEmoji.textContent = kutu.emoji;
   akisBaslik.textContent = kutu.ad;
   akisHedef.textContent = kutu.hedef ? "Hedefin: " + kutu.hedef : "";
@@ -352,8 +768,10 @@ function akisiAc(kutu) {
 
 function kutulariGeriGetir() {
   sayaciDurdur();
+  onayKapat(false);
   const donulecekId = aktifKutu ? aktifKutu.id : null;
   aktifKutu = null;
+  aktifKayitId = null;
   akisEkrani.hidden = true;
   kutuEkrani.hidden = false;
   kutulariCiz(donulecekId);
@@ -377,6 +795,7 @@ oneriDugme.addEventListener("click", function () {
 });
 
 function oneriler(yazi) {
+  sonAn = yazi;
   sonOneriler = onerileriSec(aktifKutu, yazi);
   oneriListesi.replaceChildren();
 
@@ -387,7 +806,8 @@ function oneriler(yazi) {
     dugme.className = "oneri";
     dugme.textContent = metin;
     dugme.addEventListener("click", function () {
-      sonucuGoster(false);
+      kaydiYaz("dogru", metin, "oneri");
+      sonucuGoster("dogru", false);
     });
     satir.append(dugme);
     oneriListesi.append(satir);
@@ -406,27 +826,60 @@ secDugme.addEventListener("click", function () {
     kendiDogruKutusu.focus();
     return;
   }
-  sonucuGoster(true);
+  kaydiYaz("dogru", kendiDogruKutusu.value.trim(), "kendi");
+  sonucuGoster("dogru", true);
+});
+
+// ---------- "Bu sefer olmadı" (öneri ekranından) ----------
+olmadiDugme.addEventListener("click", function () {
+  kaydiYaz("olmadi");
+  sonucuGoster("olmadi");
 });
 
 // ---------- Sonuç ----------
-function sonucuGoster(kendiMi) {
-  sayaciDurdur();
-  let cumle;
-  if (kendiMi) {
-    cumle = METINLER.kendiDogru;
-  } else {
-    const liste_ = METINLER.dogruCumleleri;
-    cumle = liste_[Math.floor(Math.random() * liste_.length)];
-  }
-  sonucYazi.textContent = cumle;
-  durumBildirim.textContent = cumle;
-  bolumGoster("sonuc");
-  yeniAnDugme.focus();
-  kutla();
+function rastgele(liste_) {
+  return liste_[Math.floor(Math.random() * liste_.length)];
 }
 
+// tur: "dogru" | "olmadi". Kayıt bu fonksiyondan ÖNCE yazılmış olmalı (seri ona göre hesaplanır).
+function sonucuGoster(tur, kendiMi) {
+  sayaciDurdur();
+  const ozet = bugunOzeti();
+  let cumle;
+  let seriCumlesi = "";
+
+  if (tur === "dogru") {
+    cumle = kendiMi ? METINLER.kendiDogru : rastgele(METINLER.dogruCumleleri);
+    seriCumlesi = dogruSonucMetni(ozet);
+  } else {
+    // "Olmadı" sonucunda tek mesaj gösterilir (lavanta kutuda); altında ek satır yok
+    cumle = olmadiSonucMetni(ozet, bugunGunSerisi());
+  }
+
+  sonucYazi.textContent = cumle;
+  sonucYazi.classList.toggle("olmadi", tur === "olmadi");
+  sonucSeri.textContent = seriCumlesi;
+  uyduBlok.hidden = tur !== "dogru";
+  durumBildirim.textContent = seriCumlesi === "" ? cumle : cumle + " " + seriCumlesi;
+  bolumGoster("sonuc");
+  yeniAnDugme.focus();
+  if (tur === "dogru") kutla();
+}
+
+// Doğru adımın hedefe uyup uymadığı (isteğe bağlı soru)
+uyduEvet.addEventListener("click", function () {
+  uyduBlok.hidden = true;
+  yeniAnDugme.focus();
+});
+
+uyduOlmadi.addEventListener("click", function () {
+  kaydiYaz("olmadi");
+  sonucuGoster("olmadi");
+});
+
 yeniAnDugme.addEventListener("click", function () {
+  aktifKayitId = null;
+  sonAn = "";
   anYazisi.value = "";
   kendiDogruKutusu.value = "";
   anUyari.textContent = "";
@@ -445,8 +898,10 @@ function formatla(saniye) {
 
 bekleDugme.addEventListener("click", function () {
   sayaciDurdur();
+  kaydiYaz("dusunuyor");
   bekleYazi.textContent = METINLER.beklemeMesaji;
   durumBildirim.textContent = METINLER.beklemeMesaji;
+  bekleSonrasi.hidden = true;
   secenekDugme.hidden = true;
   geriSayim.hidden = false;
   geriSayim.textContent = formatla(BEKLEME_SANIYE);
@@ -467,9 +922,21 @@ function sureBitti() {
   bekleYazi.textContent = METINLER.sureBitti;
   durumBildirim.textContent = METINLER.sureBitti;
   geriSayim.hidden = true;
+  bekleSonrasi.hidden = false;
   secenekDugme.hidden = false;
   secenekDugme.focus();
 }
+
+// Süre bitince: aynı kayıt güncellenir, ikinci kayıt oluşmaz
+bekleDogru.addEventListener("click", function () {
+  kaydiYaz("dogru");
+  sonucuGoster("dogru", false);
+});
+
+bekleOlmadi.addEventListener("click", function () {
+  kaydiYaz("olmadi");
+  sonucuGoster("olmadi");
+});
 
 secenekDugme.addEventListener("click", function () {
   dogruUyari.textContent = "";
@@ -499,5 +966,116 @@ function kutla() {
   }, KUTLAMA_SURESI_MS + 300);
 }
 
+// =====================================================================
+// Silme: sayfa içi onay alanları (window.confirm kullanılmaz)
+// =====================================================================
+function onayAc(anahtar, metin, tetikleyen, odakDonsun, onayFonksiyonu) {
+  onayKapat(false);
+  const o = onayAlanlari[anahtar];
+  o.metin.textContent = metin;
+  o.alan.hidden = false;
+  aktifOnay = { anahtar: anahtar, tetikleyen: tetikleyen, odakDonsun: odakDonsun, onay: onayFonksiyonu };
+  o.vazgec.focus(); // odak güvenli seçeneğe
+}
+
+function onayKapat(odakDon) {
+  if (!aktifOnay) return;
+  const gecici = aktifOnay;
+  aktifOnay = null;
+  onayAlanlari[gecici.anahtar].alan.hidden = true;
+  if (odakDon && gecici.tetikleyen.offsetParent !== null) gecici.tetikleyen.focus();
+}
+
+Object.keys(onayAlanlari).forEach(function (anahtar) {
+  onayAlanlari[anahtar].vazgec.addEventListener("click", function () {
+    onayKapat(true);
+  });
+  onayAlanlari[anahtar].evet.addEventListener("click", function () {
+    if (!aktifOnay) return;
+    const onay = aktifOnay.onay;
+    onayKapat(aktifOnay.odakDonsun);
+    onay();
+  });
+});
+
+document.addEventListener("keydown", function (olay) {
+  if (olay.key === "Escape" && aktifOnay) {
+    olay.preventDefault();
+    onayKapat(true);
+  }
+});
+
+function ilkKutuyaOdaklan() {
+  const hedef = liste.querySelector("button") || (bosKart.hidden ? acDugme : hazirlariGetir);
+  hedef.focus();
+}
+
+function kutuSilmeOnayiIste() {
+  const ad = aktifKutu.ad;
+  const metin = "‘" + ad + "’ kutusu ve bu kutudaki tüm seçimlerin silinecek. Bu işlem geri alınamaz. Emin misin?";
+  onayAc("kutu", metin, kutuSil, false, function () {
+    kutuyuSil();
+  });
+}
+
+function kutuyuSil() {
+  sayaciDurdur();
+  const id = aktifKutu.id;
+  const ad = aktifKutu.ad;
+  veri.kutular = veri.kutular.filter(function (k) { return k.id !== id; });
+  veri.kayitlar = veri.kayitlar.filter(function (r) { return r.kutuId !== id; });
+  kaydet();
+
+  aktifKutu = null;
+  aktifKayitId = null;
+  akisEkrani.hidden = true;
+  kutuEkrani.hidden = false;
+  kutulariCiz(null, "‘" + ad + "’ kutusu silindi.");
+  ilkKutuyaOdaklan();
+}
+
+function tumVeriyiSil() {
+  sayaciDurdur();
+  if (depoSil()) {
+    depoNotu.hidden = true;
+    depoNotu.textContent = "";
+  } else {
+    depoNotuGoster(METINLER.depo.yok);
+  }
+  veri = varsayilanVeri();
+  aktifKutu = null;
+  aktifKayitId = null;
+  akisEkrani.hidden = true;
+  kutuEkrani.hidden = false;
+  kutulariCiz(null, "Tüm verilerin silindi. Temiz bir başlangıç yaptım.");
+}
+
+kutuSil.addEventListener("click", kutuSilmeOnayiIste);
+
+tumSil.addEventListener("click", function () {
+  onayAc(
+    "tum",
+    "Bu cihazdaki tüm kutuların, seçimlerin ve serilerin silinecek. Bu işlem geri alınamaz. Emin misin?",
+    tumSil,
+    true,
+    tumVeriyiSil
+  );
+});
+
+// Sadece eksik hazır kutuları ekler, kayıtlara dokunmaz (iki düğme de bunu kullanır)
+function hazirKutulariGeriGetir() {
+  hazirKutular.forEach(function (hazir) {
+    if (!hazirVarMi(hazir)) veri.kutular.push(Object.assign({}, hazir));
+  });
+  kaydet();
+  kutulariCiz(null, "Hazır kutular geri geldi.");
+  ilkKutuyaOdaklan();
+}
+
+hazirlariGetir.addEventListener("click", hazirKutulariGeriGetir);
+hazirlariGetirKucuk.addEventListener("click", hazirKutulariGeriGetir);
+
 // ---------- Başlangıç ----------
+if (ilkOkuma.durum === "bozuk") depoNotuGoster(METINLER.depo.bozuk);
+if (ilkOkuma.durum === "yok") depoNotuGoster(METINLER.depo.yok);
 kutulariCiz();
